@@ -10,6 +10,7 @@ import { FollowersModule } from './followers/followers.module';
 import { AuthModule } from './auth/auth.module';
 import { DbModule } from './db/db.module';
 import { SessionsModule } from './sessions/sessions.module';
+import { MinioModule } from './minio/minio.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { SessionsModule } from './sessions/sessions.module';
     FollowersModule,
     AuthModule,
     SessionsModule,
+    MinioModule,
   ],
   controllers: [AppController],
   providers: [AppService],

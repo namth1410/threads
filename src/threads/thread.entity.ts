@@ -8,6 +8,7 @@ import {
 import { UserEntity } from '../users/user.entity';
 import { CommentEntity } from '../comments/comment.entity';
 import { LikeEntity } from '../likes/like.entity';
+import { MediaEntity } from 'src/minio/media.entity';
 
 @Entity('threads')
 export class ThreadEntity {
@@ -25,6 +26,12 @@ export class ThreadEntity {
 
   @OneToMany(() => LikeEntity, (like) => like.thread)
   likes: LikeEntity[];
+
+  @OneToMany(() => MediaEntity, (media) => media.thread, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
+  media: MediaEntity[];
 
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

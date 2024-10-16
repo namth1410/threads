@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000' # Thay đổi cổng nếu cần
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: namth
+      DB_PASSWORD: 01664157092aA
+      DB_NAME: threads_db
+
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: namth
+      MINIO_SECRET_KEY: 01664157092aA
+      MINIO_USE_SSL: 'false' # Giá trị boolean nên được truyền dưới dạng chuỗi
+      MINIO_BUCKET_NAME: threads
+    depends_on:
+      - postgres
+      - minio
+    networks:
+      - mynetwork
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: namth
+      POSTGRES_PASSWORD: 01664157092aA
+      POSTGRES_DB: threads_db
+    ports:
+      - '5438:5432' # Cổng mặc định của PostgreSQL
+    networks:
+      - mynetwork
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  minio: # Thêm dịch vụ MinIO
+    image: quay.io/minio/minio
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: namth
+      MINIO_ROOT_PASSWORD: 01664157092aA
+    volumes:
+      - ~/data_minio:/data # Đường dẫn đến thư mục dữ liệu trên máy chủ
+    networks:
+      - mynetwork
+    command: server /data --console-address ":9001"
+
+networks:
+  mynetwork:
+    driver: bridge
+volumes:
+  postgres-data: # Volume này sẽ lưu trữ dữ liệu PostgreSQL
