@@ -3,58 +3,48 @@
 version: 2.1
 orbs:
   node: circleci/node@5
+  docker: circleci/docker@1.6.0
 jobs:
-  test-node:
-    # Install node dependencies and run tests
-    executor: node/default
+  build-and-push:
     environment:
-      JEST_JUNIT_OUTPUT_DIR: ./test-results/
+      DOCKER_IMAGE: threads_be
+      DOCKER_TAG: latest
+    executor: docker/docker
     steps:
+      - setup_remote_docker
       - checkout
-      - node/install-packages:
-          pkg-manager: npm
+      - docker/check:
+          docker-username: DOCKER_USER
+          docker-password: DOCKER_PASSWORD
+      - docker/build:
+          image: $DOCKER_USER/$DOCKER_IMAGE
+          tag: $DOCKER_TAG
+
+      - docker/push:
+          digest-path: /tmp/digest.txt
+          image: $DOCKER_USER/$DOCKER_IMAGE
+          tag: $DOCKER_TAG
       - run:
-          command: npm install jest-junit
-      - run:
-          name: Run tests
-          command: npm run test --ci --runInBand --reporters=default --reporters=jest-junit
-      - store_test_results:
-          path: ./test-results/
-  build-node:
-    # Build node project
-    executor: node/default
-    steps:
-      - checkout
-      - node/install-packages:
-          pkg-manager: npm
-      - run:
-          command: npm run build
-      - run:
-          name: Create the ~/artifacts directory if it doesn't exist
-          command: mkdir -p ~/artifacts
-      # Copy output to artifacts dir
-      - run:
-          name: Copy artifacts
-          command: cp -R build dist public .output .next .docusaurus ~/artifacts 2>/dev/null || true
-      - store_artifacts:
-          path: ~/artifacts
-          destination: node-build
+          command: |
+            echo "Digest is: $(</tmp/digest.txt)"
   deploy:
-    # This is an example deploy job, not actually used by the workflow
-    docker:
-      - image: cimg/base:stable
+    executor: docker/docker
     steps:
-      # Replace this with steps to deploy to users
-      - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
+      - add_ssh_keys:
+          fingerprints:
+            - $SSH_KEY_FINGERPRINT
+      - run: ssh -v -oStrictHostKeyChecking=no $DEPLOYED_USER@$DEPLOYED_SERVER './threads_be_start.sh'
+
 workflows:
-  build-and-test:
+  cicd-ing:
     jobs:
-      - test-node
-      - build-node:
+      - build-and-push:
+          context: fs
+          filters:
+            branches:
+              only:
+                - main
+      - deploy:
+          context: fs
           requires:
-            - test-node
-    # - deploy:
-    #     requires:
-    #       - build-node
+            - build-and-push
