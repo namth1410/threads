@@ -22,6 +22,9 @@ export class UserEntity {
   @Column()
   password: string;
 
+  @Column({ default: 1 }) // Mặc định là 1 khi user được tạo
+  tokenVersion: number;
+
   @Column({ nullable: true })
   email: string;
 

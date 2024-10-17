@@ -23,8 +23,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.userRepository.findOne({
       where: { id: payload.sub },
     });
-    if (!user) {
-      return null; // Không tìm thấy user
+    if (!user || user.tokenVersion !== payload.tokenVersion) {
+      // Nếu không tìm thấy user hoặc tokenVersion không khớp, từ chối truy cập
+      return null;
     }
     return user; // Trả về user nếu tìm thấy
   }

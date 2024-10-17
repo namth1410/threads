@@ -6,12 +6,15 @@ import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SessionEntity } from '../sessions/session.entity';
 import { Repository } from 'typeorm';
+import { UserEntity } from 'src/users/user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(SessionEntity)
     private sessionRepository: Repository<SessionEntity>,
+    @InjectRepository(UserEntity)
+    private userRepository: Repository<UserEntity>,
     private usersService: UsersService,
     private jwtService: JwtService,
   ) {}
@@ -50,12 +53,7 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { username: user.username, sub: user.id };
-    const accessToken = this.jwtService.sign(payload);
-
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: '7d', // Thời hạn dài hơn cho refreshToken, ví dụ: 7 ngày
-    });
+    const { accessToken, refreshToken } = this.generateToken(user);
 
     // Hủy phiên làm việc cũ nếu có
     await this.sessionRepository.delete({ userId: user.id });
@@ -74,11 +72,33 @@ export class AuthService {
   }
 
   async logout(userId: number) {
-    return this.sessionRepository.delete({ userId });
+    await this.userRepository.update(userId, {
+      tokenVersion: () => 'tokenVersion + 1', // Tăng tokenVersion lên 1
+    });
   }
 
   async validateSession(token: string): Promise<any> {
     const session = await this.sessionRepository.findOne({ where: { token } });
     return session ? session.userId : null;
+  }
+
+  generateToken(user: any) {
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      tokenVersion: user.tokenVersion,
+    };
+
+    // Tạo accessToken với thời hạn ngắn hơn
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: '1h', // accessToken có thời hạn 1 giờ
+    });
+
+    // Tạo refreshToken với thời hạn dài hơn
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '7d', // refreshToken có thời hạn 7 ngày
+    });
+
+    return { accessToken, refreshToken };
   }
 }
