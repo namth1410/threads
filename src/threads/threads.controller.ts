@@ -1,31 +1,36 @@
 // threads.controller.ts
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  NotFoundException,
+  Param,
   Post,
   Put,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-  NotFoundException,
-  UseInterceptors,
+  Query,
   UploadedFiles,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ThreadsService } from './threads.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Import guard
-import { ThreadEntity } from './thread.entity'; // Entity cho bài đăng
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateThreadDto } from './dto/create-thread.dto';
-import { UsersService } from 'src/users/users.service';
-import { UpdateThreadDto } from './dto/update-thread.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { Redis } from 'ioredis';
 import { MinioService } from 'src/minio/minio.service';
+import { UsersService } from 'src/users/users.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Import guard
+import { CreateThreadDto } from './dto/create-thread.dto';
+import { UpdateThreadDto } from './dto/update-thread.dto';
+import { ThreadEntity } from './thread.entity'; // Entity cho bài đăng
+import { ThreadsService } from './threads.service';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { ResponseDto } from 'src/common/dto/response.dto';
 
 @ApiTags('threads')
 @Controller('threads')
@@ -36,6 +41,7 @@ export class ThreadsController {
     private readonly threadsService: ThreadsService,
     private readonly usersService: UsersService, // Inject UsersService
     private readonly minioService: MinioService,
+    @InjectRedis() private readonly redisClient: Redis,
   ) {}
 
   @Get()
@@ -45,8 +51,28 @@ export class ThreadsController {
     description: 'List of threads.',
     type: [ThreadEntity],
   })
-  async findAll(): Promise<ThreadEntity[]> {
-    return this.threadsService.findAll();
+  async findAll(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<ResponseDto<ThreadEntity[]>> {
+    const cacheKey = `threads_page_${paginationDto.page}_limit_${paginationDto.limit}`;
+    const cachedThreads = await this.redisClient.get(cacheKey);
+
+    if (cachedThreads) {
+      // Trả về dữ liệu từ cache (dạng chuỗi JSON, cần parse lại)
+      return JSON.parse(cachedThreads);
+    }
+    const threadsWithPagination =
+      await this.threadsService.findAll(paginationDto);
+
+    // Lưu kết quả vào Redis với TTL là 60 giây
+    await this.redisClient.set(
+      cacheKey,
+      JSON.stringify(threadsWithPagination),
+      'EX',
+      60,
+    );
+
+    return threadsWithPagination;
   }
 
   @Post()
@@ -119,6 +145,7 @@ export class ThreadsController {
     };
     return this.threadsService.update(id, threadData);
   }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a thread' })
   @ApiResponse({ status: 204, description: 'Thread deleted successfully.' })

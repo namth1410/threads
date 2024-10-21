@@ -1,16 +1,20 @@
 // threads.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Connection, DataSource, Repository } from 'typeorm';
-import { ThreadEntity } from './thread.entity'; // Giả sử bạn đã có một entity cho Thread
+import { PaginationMetaDto } from 'src/common/dto/pagination-meta.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { MediaEntity } from 'src/minio/media.entity';
 import { MinioService } from 'src/minio/minio.service';
+import { DataSource, Repository } from 'typeorm';
+import { ThreadEntity } from './thread.entity'; // Giả sử bạn đã có một entity cho Thread
+import { ThreadsRepository } from './threads.repository';
+import { ResponseDto } from 'src/common/dto/response.dto';
 
 @Injectable()
 export class ThreadsService {
   constructor(
-    @InjectRepository(ThreadEntity)
-    private threadsRepository: Repository<ThreadEntity>,
+    // @InjectRepository(ThreadEntity)
+    private threadsRepository: ThreadsRepository,
 
     @InjectRepository(MediaEntity)
     private readonly mediaRepository: Repository<MediaEntity>,
@@ -20,21 +24,37 @@ export class ThreadsService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findAll(): Promise<ThreadEntity[]> {
-    return this.threadsRepository.find();
+  async findAll(
+    paginationDto: PaginationDto,
+  ): Promise<ResponseDto<ThreadEntity[]>> {
+    const threadsWithPagination =
+      await this.threadsRepository.getEntitiesWithPagination(paginationDto);
+
+    const paginationMeta: PaginationMetaDto = {
+      count: threadsWithPagination.count,
+      totalPages: threadsWithPagination.totalPages,
+      currentPage: threadsWithPagination.currentPage,
+    };
+
+    const response: ResponseDto<ThreadEntity[]> = {
+      data: threadsWithPagination.data,
+      pagination: paginationMeta,
+      message: 'Threads retrieved successfully',
+      statusCode: 200,
+    };
+
+    return response;
   }
 
   async create(threadData: Partial<ThreadEntity>): Promise<ThreadEntity> {
-    const thread = this.threadsRepository.create(threadData);
-    return this.threadsRepository.save(thread);
+    return this.threadsRepository.createEntity(threadData);
   }
 
   async update(
     id: number,
     threadData: Partial<ThreadEntity>,
-  ): Promise<ThreadEntity> {
-    await this.threadsRepository.update(id, threadData);
-    return this.threadsRepository.findOne({ where: { id } }); // Sử dụng where để tìm kiếm theo ID
+  ): Promise<ThreadEntity | null> {
+    return this.threadsRepository.updateEntity(id, threadData);
   }
 
   async remove(id: number): Promise<void> {

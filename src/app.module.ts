@@ -11,6 +11,8 @@ import { AuthModule } from './auth/auth.module';
 import { DbModule } from './db/db.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { MinioModule } from './minio/minio.module';
+import { RedisModule } from '@nestjs-modules/ioredis';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -23,6 +25,11 @@ import { MinioModule } from './minio/minio.module';
     AuthModule,
     SessionsModule,
     MinioModule,
+    RedisModule.forRoot({
+      type: 'single',
+      url: 'redis://36.50.176.49:6379',
+    }),
+    CacheModule,
   ],
   controllers: [AppController],
   providers: [AppService],

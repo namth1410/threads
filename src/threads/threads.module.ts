@@ -6,6 +6,7 @@ import { ThreadEntity } from './thread.entity';
 import { UsersModule } from 'src/users/users.module';
 import { MinioModule } from 'src/minio/minio.module';
 import { MediaEntity } from 'src/minio/media.entity';
+import { ThreadsRepository } from './threads.repository';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { MediaEntity } from 'src/minio/media.entity';
     UsersModule,
     MinioModule,
   ], // Đăng ký entity
-  providers: [ThreadsService],
+  providers: [ThreadsService, ThreadsRepository],
   controllers: [ThreadsController],
 })
 export class ThreadsModule {}
