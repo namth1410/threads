@@ -1,27 +1,48 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './user.entity';
+import { UsersRepository } from './users.repository';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(UserEntity)
-    private usersRepository: Repository<UserEntity>, // inject User repository
-  ) {}
+  constructor(private readonly usersRepository: UsersRepository) {}
 
-  // Tạo người dùng mới và lưu vào database
-  async create(user: Partial<UserEntity>): Promise<UserEntity> {
-    const newUser = this.usersRepository.create(user); // tạo đối tượng User
-    return this.usersRepository.save(newUser); // lưu vào cơ sở dữ liệu
+  async getAllUsers(): Promise<UserEntity[]> {
+    return this.usersRepository.getAllEntity(); // Sử dụng phương thức từ UsersRepository
   }
 
-  // Tìm người dùng dựa trên tên đăng nhập
-  async findOne(username: string): Promise<UserEntity | undefined> {
-    return this.usersRepository.findOne({ where: { username } });
+  async getUserById(id: number): Promise<UserEntity | null> {
+    return this.usersRepository.getEntityById(id); // Sử dụng phương thức từ UsersRepository
   }
 
-  async findById(id: number): Promise<UserEntity | null> {
-    return this.usersRepository.findOne({ where: { id } }); // Tìm người dùng theo ID
+  async findByUsername(username: string): Promise<UserEntity | null> {
+    return this.usersRepository.findByUsername(username);
+  }
+
+  async createUser(data: Partial<UserEntity>): Promise<UserEntity> {
+    const existingUser = await this.usersRepository.findByUsername(
+      data.username,
+    );
+    if (existingUser) {
+      throw new ConflictException('Username already exists'); // Ném lỗi nếu username đã tồn tại
+    }
+    return this.usersRepository.createEntity(data); // Sử dụng phương thức từ UsersRepository
+  }
+
+  async updateUser(
+    id: number,
+    data: Partial<UserEntity>,
+  ): Promise<UserEntity | null> {
+    return this.usersRepository.updateEntity(id, data); // Sử dụng phương thức từ UsersRepository
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await this.usersRepository.deleteEntity(id); // Sử dụng phương thức từ UsersRepository
+  }
+
+  async getUsersWithPagination(paginationDto: PaginationDto): Promise<any> {
+    return this.usersRepository.getEntitiesWithPagination(paginationDto); // Sử dụng phương thức từ UsersRepository
   }
 }

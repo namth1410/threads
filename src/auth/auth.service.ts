@@ -21,11 +21,11 @@ export class AuthService {
 
   async register(username: string, password: string) {
     const hashedPassword = await bcrypt.hash(password, 10);
-    return this.usersService.create({ username, password: hashedPassword });
+    return this.usersService.createUser({ username, password: hashedPassword });
   }
 
   async validateUser(username: string, password: string): Promise<any> {
-    const user = await this.usersService.findOne(username);
+    const user = await this.usersService.findByUsername(username);
     if (user && (await bcrypt.compare(password, user.password))) {
       const { password, ...result } = user; // Loại bỏ mật khẩu khỏi kết quả
       return result;

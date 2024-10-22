@@ -23,6 +23,14 @@ export abstract class BaseRepository<T extends BaseEntity> {
     return this.repository.findOne({ where });
   }
 
+  // Thêm phương thức tìm theo username
+  async findByUsername(username: string): Promise<T | null> {
+    const where: FindOptionsWhere<T> = {
+      username,
+    } as unknown as FindOptionsWhere<T>;
+    return this.repository.findOne({ where });
+  }
+
   // Phương thức mới để lấy danh sách với phân trang
   async getEntitiesWithPagination(paginationDto: PaginationDto): Promise<any> {
     const queryBuilder: SelectQueryBuilder<T> =

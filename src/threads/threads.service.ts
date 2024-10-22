@@ -1,5 +1,9 @@
 // threads.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PaginationMetaDto } from 'src/common/dto/pagination-meta.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
@@ -57,16 +61,23 @@ export class ThreadsService {
     return this.threadsRepository.updateEntity(id, threadData);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, userId: number): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       // Truy vấn tất cả media liên quan đến thread
       const thread = await manager.findOne(ThreadEntity, {
         where: { id },
-        relations: ['media'],
+        relations: ['media', 'user'],
       });
 
       if (!thread) {
         throw new NotFoundException(`Thread with id ${id} not found`);
+      }
+
+      // Kiểm tra xem người dùng có phải là chủ sở hữu thread không
+      if (thread.user.id !== userId) {
+        throw new ForbiddenException(
+          'You do not have permission to delete this thread',
+        );
       }
 
       // Xóa từng file khỏi MinIO

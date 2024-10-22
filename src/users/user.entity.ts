@@ -10,6 +10,7 @@ import { ThreadEntity } from '../threads/thread.entity';
 import { CommentEntity } from '../comments/comment.entity';
 import { LikeEntity } from '../likes/like.entity';
 import { FollowerEntity } from '../followers/follower.entity';
+import { Role } from 'src/common/enums/role.enum';
 
 @Entity('users')
 export class UserEntity {
@@ -42,6 +43,9 @@ export class UserEntity {
 
   @OneToMany(() => FollowerEntity, (follower) => follower.followed)
   following: FollowerEntity[];
+
+  @Column({ type: 'enum', enum: Role, default: Role.USER })
+  role: Role;
 
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

@@ -10,6 +10,7 @@ import {
   Post,
   Put,
   Query,
+  Request,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -22,6 +23,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Redis } from 'ioredis';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { ResponseDto } from 'src/common/dto/response.dto';
+import { Role } from 'src/common/enums/role.enum';
 import { MinioService } from 'src/minio/minio.service';
 import { UsersService } from 'src/users/users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Import guard
@@ -29,8 +34,7 @@ import { CreateThreadDto } from './dto/create-thread.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
 import { ThreadEntity } from './thread.entity'; // Entity cho bài đăng
 import { ThreadsService } from './threads.service';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { ResponseDto } from 'src/common/dto/response.dto';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @ApiTags('threads')
 @Controller('threads')
@@ -51,6 +55,8 @@ export class ThreadsController {
     description: 'List of threads.',
     type: [ThreadEntity],
   })
+  @Roles(Role.SUPERADMIN, Role.USER)
+  @UseGuards(RolesGuard)
   async findAll(
     @Query() paginationDto: PaginationDto,
   ): Promise<ResponseDto<ThreadEntity[]>> {
@@ -89,7 +95,7 @@ export class ThreadsController {
     @UploadedFiles() files: Express.Multer.File[],
   ): Promise<ThreadEntity> {
     // Fetch the user entity by ID
-    const user = await this.usersService.findById(createThreadDto.userId); // Adjust according to your service
+    const user = await this.usersService.getUserById(createThreadDto.userId); // Adjust according to your service
 
     if (!user) {
       throw new NotFoundException('User not found'); // Handle user not found scenario
@@ -150,7 +156,10 @@ export class ThreadsController {
   @ApiOperation({ summary: 'Delete a thread' })
   @ApiResponse({ status: 204, description: 'Thread deleted successfully.' })
   @ApiResponse({ status: 404, description: 'Thread not found' })
-  async remove(@Param('id') id: number): Promise<void> {
-    return this.threadsService.remove(id);
+  @UseGuards(RolesGuard) // Chỉ cần kiểm tra vai trò
+  @Roles(Role.SUPERADMIN, Role.USER) // Chỉ định các vai trò hợp lệ
+  async remove(@Param('id') id: number, @Request() req): Promise<void> {
+    const userId = req.user.id;
+    return this.threadsService.remove(id, userId);
   }
 }
