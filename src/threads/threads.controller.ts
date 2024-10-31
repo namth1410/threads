@@ -27,6 +27,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
 import { Role } from 'src/common/enums/role.enum';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 import { MinioService } from 'src/minio/minio.service';
 import { UsersService } from 'src/users/users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Import guard
@@ -34,7 +35,6 @@ import { CreateThreadDto } from './dto/create-thread.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
 import { ThreadEntity } from './thread.entity'; // Entity cho bài đăng
 import { ThreadsService } from './threads.service';
-import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @ApiTags('threads')
 @Controller('threads')
@@ -45,7 +45,7 @@ export class ThreadsController {
     private readonly threadsService: ThreadsService,
     private readonly usersService: UsersService, // Inject UsersService
     private readonly minioService: MinioService,
-    @InjectRedis() private readonly redisClient: Redis,
+    // @InjectRedis() private readonly redisClient: Redis,
   ) {}
 
   @Get()
@@ -60,23 +60,23 @@ export class ThreadsController {
   async findAll(
     @Query() paginationDto: PaginationDto,
   ): Promise<ResponseDto<ThreadEntity[]>> {
-    const cacheKey = `threads_page_${paginationDto.page}_limit_${paginationDto.limit}`;
-    const cachedThreads = await this.redisClient.get(cacheKey);
+    // const cacheKey = `threads_page_${paginationDto.page}_limit_${paginationDto.limit}`;
+    // const cachedThreads = await this.redisClient.get(cacheKey);
 
-    if (cachedThreads) {
-      // Trả về dữ liệu từ cache (dạng chuỗi JSON, cần parse lại)
-      return JSON.parse(cachedThreads);
-    }
+    // if (cachedThreads) {
+    //   // Trả về dữ liệu từ cache (dạng chuỗi JSON, cần parse lại)
+    //   return JSON.parse(cachedThreads);
+    // }
     const threadsWithPagination =
       await this.threadsService.findAll(paginationDto);
 
     // Lưu kết quả vào Redis với TTL là 60 giây
-    await this.redisClient.set(
-      cacheKey,
-      JSON.stringify(threadsWithPagination),
-      'EX',
-      60,
-    );
+    // await this.redisClient.set(
+    //   cacheKey,
+    //   JSON.stringify(threadsWithPagination),
+    //   'EX',
+    //   60,
+    // );
 
     return threadsWithPagination;
   }
