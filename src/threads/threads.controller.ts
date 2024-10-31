@@ -1,5 +1,4 @@
 // threads.controller.ts
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   Body,
   Controller,
@@ -22,7 +21,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Redis } from 'ioredis';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
@@ -32,6 +30,7 @@ import { MinioService } from 'src/minio/minio.service';
 import { UsersService } from 'src/users/users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Import guard
 import { CreateThreadDto } from './dto/create-thread.dto';
+import { ThreadsPaginationDto } from './dto/threads-pagination.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
 import { ThreadEntity } from './thread.entity'; // Entity cho bài đăng
 import { ThreadsService } from './threads.service';
@@ -58,7 +57,7 @@ export class ThreadsController {
   @Roles(Role.SUPERADMIN, Role.USER)
   @UseGuards(RolesGuard)
   async findAll(
-    @Query() paginationDto: PaginationDto,
+    @Query() paginationDto: ThreadsPaginationDto,
   ): Promise<ResponseDto<ThreadEntity[]>> {
     // const cacheKey = `threads_page_${paginationDto.page}_limit_${paginationDto.limit}`;
     // const cachedThreads = await this.redisClient.get(cacheKey);
@@ -68,7 +67,7 @@ export class ThreadsController {
     //   return JSON.parse(cachedThreads);
     // }
     const threadsWithPagination =
-      await this.threadsService.findAll(paginationDto);
+      await this.threadsService.getAllThreads(paginationDto);
 
     // Lưu kết quả vào Redis với TTL là 60 giây
     // await this.redisClient.set(
@@ -79,6 +78,31 @@ export class ThreadsController {
     // );
 
     return threadsWithPagination;
+  }
+
+  // API để lấy threads của người dùng thực hiện request
+  @Get('my-threads') // Bạn có thể điều chỉnh route theo ý muốn
+  @ApiOperation({ summary: 'Retrieve threads for the authenticated user' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of user threads.',
+    type: [ThreadEntity],
+  })
+  async findUserThreads(
+    @Request() req: any, // Lấy thông tin người dùng từ request
+    @Query() paginationDto: PaginationDto, // Lấy thông tin phân trang từ query params
+  ): Promise<ResponseDto<ThreadEntity[]>> {
+    const userId = req.user.id; // Lấy userId từ thông tin người dùng đã xác thực
+
+    // Cập nhật bộ lọc để chỉ lấy các thread của người dùng hiện tại
+    paginationDto.filters = {
+      ...paginationDto.filters, // Giữ lại các bộ lọc hiện có
+      user: { id: userId }, // Thay đổi ở đây để sử dụng object với thuộc tính user
+    };
+
+    // Gọi service để lấy tất cả threads, bao gồm cả các filter
+    const threads = await this.threadsService.getAllThreads(paginationDto);
+    return threads;
   }
 
   @Post()
@@ -92,10 +116,12 @@ export class ThreadsController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   async create(
     @Body() createThreadDto: CreateThreadDto, // Use DTO here
+    @Request() req: any, // Thêm request để lấy thông tin người dùng
     @UploadedFiles() files: Express.Multer.File[],
   ): Promise<ThreadEntity> {
+    const userId = req.user.id;
     // Fetch the user entity by ID
-    const user = await this.usersService.getUserById(createThreadDto.userId); // Adjust according to your service
+    const user = await this.usersService.getUserById(userId); // Adjust according to your service
 
     if (!user) {
       throw new NotFoundException('User not found'); // Handle user not found scenario

@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { UserEntity } from '../users/user.entity';
 import { CommentEntity } from '../comments/comment.entity';

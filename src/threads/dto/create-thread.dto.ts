@@ -10,8 +10,4 @@ export class CreateThreadDto {
   @IsString()
   @Length(1, 500) // Giới hạn chiều dài của nội dung bài đăng
   content: string;
-
-  @ApiProperty({ example: 1, description: 'User ID of the thread creator' })
-  @IsNotEmpty()
-  userId: number; // ID của người dùng tạo bài đăng (nếu cần)
 }

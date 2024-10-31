@@ -1,11 +1,14 @@
 import {
   DeepPartial,
+  FindManyOptions,
   FindOptionsWhere,
   Repository,
   SelectQueryBuilder,
 } from 'typeorm';
 import { PaginationDto } from '../dto/pagination.dto';
 import { paginate } from '../helpers/pagination.helper';
+import { ResponseDto } from '../dto/response.dto';
+import { PaginationMetaDto } from '../dto/pagination-meta.dto';
 
 interface BaseEntity {
   id: number;
@@ -14,8 +17,29 @@ interface BaseEntity {
 export abstract class BaseRepository<T extends BaseEntity> {
   constructor(private readonly repository: Repository<T>) {}
 
-  async getAllEntity(): Promise<T[]> {
-    return this.repository.find();
+  async getAllEntity(options?: FindManyOptions<T>): Promise<ResponseDto<T[]>> {
+    const [result, total] = await this.repository.findAndCount(options);
+
+    const pagination = options?.take
+      ? {
+          count: result.length,
+          totalPages: Math.ceil(total / options.take),
+          currentPage: options.skip ? options.skip / options.take + 1 : 1,
+        }
+      : undefined;
+
+    return new ResponseDto<T[]>(
+      result,
+      pagination
+        ? new PaginationMetaDto(
+            pagination.count,
+            pagination.totalPages,
+            pagination.currentPage,
+          )
+        : undefined,
+      'Data retrieved successfully',
+      200,
+    );
   }
 
   async getEntityById(id: number): Promise<T | null> {
@@ -29,15 +53,6 @@ export abstract class BaseRepository<T extends BaseEntity> {
       username,
     } as unknown as FindOptionsWhere<T>;
     return this.repository.findOne({ where });
-  }
-
-  // Phương thức mới để lấy danh sách với phân trang
-  async getEntitiesWithPagination(paginationDto: PaginationDto): Promise<any> {
-    const queryBuilder: SelectQueryBuilder<T> =
-      this.repository.createQueryBuilder('entity'); // Tạo query builder cho thực thể
-
-    // Sử dụng hàm paginate để áp dụng phân trang
-    return paginate(queryBuilder, paginationDto);
   }
 
   async createEntity(data: DeepPartial<T>): Promise<T> {

@@ -9,10 +9,11 @@ import { PaginationMetaDto } from 'src/common/dto/pagination-meta.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { MediaEntity } from 'src/minio/media.entity';
 import { MinioService } from 'src/minio/minio.service';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Like, Repository, SelectQueryBuilder } from 'typeorm';
 import { ThreadEntity } from './thread.entity'; // Giả sử bạn đã có một entity cho Thread
 import { ThreadsRepository } from './threads.repository';
 import { ResponseDto } from 'src/common/dto/response.dto';
+import { ThreadsPaginationDto } from './dto/threads-pagination.dto';
 
 @Injectable()
 export class ThreadsService {
@@ -28,26 +29,24 @@ export class ThreadsService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findAll(
-    paginationDto: PaginationDto,
+  async getAllThreads(
+    paginationDto: ThreadsPaginationDto,
   ): Promise<ResponseDto<ThreadEntity[]>> {
-    const threadsWithPagination =
-      await this.threadsRepository.getEntitiesWithPagination(paginationDto);
+    const filters: any = { ...paginationDto.filters }; // Lấy các bộ lọc hiện có
 
-    const paginationMeta: PaginationMetaDto = {
-      count: threadsWithPagination.count,
-      totalPages: threadsWithPagination.totalPages,
-      currentPage: threadsWithPagination.currentPage,
-    };
+    if (paginationDto.content) {
+      filters.content = Like(`%${paginationDto.content}%`); // Thêm điều kiện lọc cho nội dung
+    }
 
-    const response: ResponseDto<ThreadEntity[]> = {
-      data: threadsWithPagination.data,
-      pagination: paginationMeta,
-      message: 'Threads retrieved successfully',
-      statusCode: 200,
-    };
-
-    return response;
+    return this.threadsRepository.getAllEntity({
+      skip: (paginationDto.page - 1) * paginationDto.limit,
+      take: paginationDto.limit,
+      order: paginationDto.sortBy
+        ? { [paginationDto.sortBy]: paginationDto.order }
+        : undefined,
+      where: filters,
+      relations: ['media'],
+    });
   }
 
   async create(threadData: Partial<ThreadEntity>): Promise<ThreadEntity> {

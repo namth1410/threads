@@ -12,10 +12,11 @@ export async function paginate<Entity>(
   const pageSize = limit || 10;
 
   // Áp dụng bộ lọc
+
   if (filters) {
     for (const [key, value] of Object.entries(filters)) {
       if (value !== undefined && value !== null) {
-        queryBuilder.andWhere(`${key} = :value`, { value });
+        queryBuilder.andWhere(`"${key}" = :value`, { value });
       }
     }
   }
@@ -30,7 +31,7 @@ export async function paginate<Entity>(
     .skip((currentPage - 1) * pageSize) // Tính skip
     .take(pageSize) // Tính take
     .getManyAndCount();
-
+  
   return {
     data: result,
     count: total,
