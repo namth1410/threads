@@ -14,6 +14,7 @@ import { ThreadEntity } from './thread.entity'; // Giả sử bạn đã có m�
 import { ThreadsRepository } from './threads.repository';
 import { ResponseDto } from 'src/common/dto/response.dto';
 import { ThreadsPaginationDto } from './dto/threads-pagination.dto';
+import { PageResponseDto } from 'src/common/dto/page-response.dto';
 
 @Injectable()
 export class ThreadsService {
@@ -31,7 +32,7 @@ export class ThreadsService {
 
   async getAllThreads(
     paginationDto: ThreadsPaginationDto,
-  ): Promise<ResponseDto<ThreadEntity[]>> {
+  ): Promise<PageResponseDto<ThreadEntity>> {
     const filters: any = { ...paginationDto.filters }; // Lấy các bộ lọc hiện có
 
     if (paginationDto.content) {
@@ -45,18 +46,20 @@ export class ThreadsService {
         ? { [paginationDto.sortBy]: paginationDto.order }
         : undefined,
       where: filters,
-      relations: ['media'],
+      relations: ['media', 'user'],
     });
   }
 
-  async create(threadData: Partial<ThreadEntity>): Promise<ThreadEntity> {
+  async create(
+    threadData: Partial<ThreadEntity>,
+  ): Promise<ResponseDto<ThreadEntity>> {
     return this.threadsRepository.createEntity(threadData);
   }
 
   async update(
     id: number,
     threadData: Partial<ThreadEntity>,
-  ): Promise<ThreadEntity | null> {
+  ): Promise<ResponseDto<ThreadEntity> | null> {
     return this.threadsRepository.updateEntity(id, threadData);
   }
 

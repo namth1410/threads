@@ -5,6 +5,7 @@ import { UserEntity } from './user.entity';
 import { UsersRepository } from './users.repository';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
+import { PageResponseDto } from 'src/common/dto/page-response.dto';
 
 @Injectable()
 export class UsersService {
@@ -12,7 +13,7 @@ export class UsersService {
 
   async getAllUsers(
     paginationDto: PaginationDto,
-  ): Promise<ResponseDto<UserEntity[]>> {
+  ): Promise<PageResponseDto<UserEntity>> {
     // Gọi phương thức getAllEntity từ UsersRepository và truyền vào paginationDto
     return this.usersRepository.getAllEntity({
       skip: (paginationDto.page - 1) * paginationDto.limit,
@@ -24,7 +25,7 @@ export class UsersService {
     });
   }
 
-  async getUserById(id: number): Promise<UserEntity | null> {
+  async getUserById(id: number): Promise<ResponseDto<UserEntity> | null> {
     return this.usersRepository.getEntityById(id); // Sử dụng phương thức từ UsersRepository
   }
 
@@ -32,7 +33,9 @@ export class UsersService {
     return this.usersRepository.findByUsername(username);
   }
 
-  async createUser(data: Partial<UserEntity>): Promise<UserEntity> {
+  async createUser(
+    data: Partial<UserEntity>,
+  ): Promise<ResponseDto<UserEntity>> {
     const existingUser = await this.usersRepository.findByUsername(
       data.username,
     );
@@ -45,8 +48,19 @@ export class UsersService {
   async updateUser(
     id: number,
     data: Partial<UserEntity>,
-  ): Promise<UserEntity | null> {
-    return this.usersRepository.updateEntity(id, data); // Sử dụng phương thức từ UsersRepository
+  ): Promise<ResponseDto<UserEntity>> {
+    // Kiểm tra xem displayId có tồn tại không
+    if (data.displayId) {
+      const existingUser = await this.usersRepository.getEntityByCriteria({
+        displayId: data.displayId,
+      });
+
+      if (existingUser && existingUser.id !== id) {
+        throw new Error('Display ID must be unique');
+      }
+    }
+
+    return this.usersRepository.updateEntity(id, data);
   }
 
   async deleteUser(id: number): Promise<void> {

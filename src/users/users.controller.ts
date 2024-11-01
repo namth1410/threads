@@ -1,4 +1,13 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -13,6 +22,8 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/enums/role.enum';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { PageResponseDto } from 'src/common/dto/page-response.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -32,7 +43,25 @@ export class UsersController {
   @UseGuards(RolesGuard)
   async getAllUsers(
     @Query() paginationDto: PaginationDto,
-  ): Promise<ResponseDto<UserEntity[]>> {
+  ): Promise<PageResponseDto<UserEntity>> {
     return this.usersService.getAllUsers(paginationDto);
+  }
+
+  // Phương thức cập nhật người dùng
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update user information' })
+  @ApiResponse({
+    status: 200,
+    description: 'User updated successfully',
+    type: ResponseDto,
+  })
+  @Roles(Role.USER)
+  @UseGuards(RolesGuard)
+  async updateUser(
+    @Request() req: any, // Lấy thông tin từ request
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<ResponseDto<UserEntity>> {
+    const userId = req.user.id; // Lấy ID từ thông tin xác thực
+    return await this.usersService.updateUser(userId, updateUserDto);
   }
 }

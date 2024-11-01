@@ -9,6 +9,7 @@ import { PaginationDto } from '../dto/pagination.dto';
 import { paginate } from '../helpers/pagination.helper';
 import { ResponseDto } from '../dto/response.dto';
 import { PaginationMetaDto } from '../dto/pagination-meta.dto';
+import { PageResponseDto } from '../dto/page-response.dto';
 
 interface BaseEntity {
   id: number;
@@ -17,7 +18,9 @@ interface BaseEntity {
 export abstract class BaseRepository<T extends BaseEntity> {
   constructor(private readonly repository: Repository<T>) {}
 
-  async getAllEntity(options?: FindManyOptions<T>): Promise<ResponseDto<T[]>> {
+  async getAllEntity(
+    options?: FindManyOptions<T>,
+  ): Promise<PageResponseDto<T>> {
     const [result, total] = await this.repository.findAndCount(options);
 
     const pagination = options?.take
@@ -25,16 +28,18 @@ export abstract class BaseRepository<T extends BaseEntity> {
           count: result.length,
           totalPages: Math.ceil(total / options.take),
           currentPage: options.skip ? options.skip / options.take + 1 : 1,
+          limit: options.take,
         }
       : undefined;
 
-    return new ResponseDto<T[]>(
+    return new PageResponseDto<T>(
       result,
       pagination
         ? new PaginationMetaDto(
             pagination.count,
             pagination.totalPages,
             pagination.currentPage,
+            pagination.limit,
           )
         : undefined,
       'Data retrieved successfully',
@@ -42,9 +47,19 @@ export abstract class BaseRepository<T extends BaseEntity> {
     );
   }
 
-  async getEntityById(id: number): Promise<T | null> {
+  async getEntityById(id: number): Promise<ResponseDto<T> | null> {
     const where: FindOptionsWhere<T> = { id } as FindOptionsWhere<T>;
-    return this.repository.findOne({ where });
+    const entity = await this.repository.findOne({ where });
+
+    if (!entity) {
+      return null;
+    }
+
+    return new ResponseDto(entity, 'Entity retrieved successfully', 200);
+  }
+
+  async getEntityByCriteria(criteria: FindOptionsWhere<T>): Promise<T | null> {
+    return this.repository.findOne({ where: criteria });
   }
 
   // Thêm phương thức tìm theo username
@@ -55,26 +70,34 @@ export abstract class BaseRepository<T extends BaseEntity> {
     return this.repository.findOne({ where });
   }
 
-  async createEntity(data: DeepPartial<T>): Promise<T> {
+  async createEntity(data: DeepPartial<T>): Promise<ResponseDto<T>> {
     const entity = this.repository.create(data);
-    return this.repository.save(entity);
+    const savedEntity = await this.repository.save(entity);
+    return new ResponseDto(savedEntity, 'Entity created successfully', 201);
   }
 
-  async updateEntity(id: number, data: DeepPartial<T>): Promise<T | null> {
+  async updateEntity(
+    id: number,
+    data: DeepPartial<T>,
+  ): Promise<ResponseDto<T>> {
     // Kiểm tra xem bản ghi có tồn tại không
     const existingEntity = await this.getEntityById(id);
 
     if (!existingEntity) {
-      throw new Error(`Entity with id ${id} not found`);
+      throw new Error(`Entity với id ${id} không tồn tại`);
     }
 
     // Cập nhật dữ liệu
-    this.repository.merge(existingEntity, data); // Merge dữ liệu mới vào bản ghi đã tồn tại
+    this.repository.merge(existingEntity.data, data); // Merge dữ liệu mới vào bản ghi đã tồn tại
 
     // Lưu bản ghi đã cập nhật
-    await this.repository.save(existingEntity);
+    await this.repository.save(existingEntity.data);
 
-    return existingEntity;
+    return new ResponseDto(
+      existingEntity.data,
+      'Entity cập nhật thành công',
+      200,
+    );
   }
 
   async deleteEntity(id: number): Promise<void> {

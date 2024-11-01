@@ -22,6 +22,7 @@ import { Repository } from 'typeorm';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ResponseDto } from 'src/common/dto/response.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -36,7 +37,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new user' }) // Mô tả ngắn cho endpoint
   @ApiResponse({ status: 201, description: 'User registered successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid input.' })
-  async register(@Body() registerDto: RegisterDto) {
+  async register(
+    @Body() registerDto: RegisterDto,
+  ): Promise<ResponseDto<UserEntity>> {
     return this.authService.register(
       registerDto.username,
       registerDto.password,

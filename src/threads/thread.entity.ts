@@ -10,6 +10,7 @@ import { UserEntity } from '../users/user.entity';
 import { CommentEntity } from '../comments/comment.entity';
 import { LikeEntity } from '../likes/like.entity';
 import { MediaEntity } from 'src/minio/media.entity';
+import { Visibility } from './enums/visibility.enum';
 
 @Entity('threads')
 export class ThreadEntity {
@@ -21,6 +22,13 @@ export class ThreadEntity {
 
   @ManyToOne(() => UserEntity, (user) => user.threads)
   user: UserEntity;
+
+  @Column({
+    type: 'enum',
+    enum: Visibility,
+    default: Visibility.PUBLIC,
+  })
+  visibility: Visibility;
 
   @OneToMany(() => CommentEntity, (comment) => comment.thread)
   comments: CommentEntity[];

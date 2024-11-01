@@ -34,6 +34,9 @@ import { ThreadsPaginationDto } from './dto/threads-pagination.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
 import { ThreadEntity } from './thread.entity'; // Entity cho bài đăng
 import { ThreadsService } from './threads.service';
+import { Visibility } from './enums/visibility.enum';
+import { PageResponseDto } from 'src/common/dto/page-response.dto';
+import { ThreadResponseDto } from './dto/thread-response.dto';
 
 @ApiTags('threads')
 @Controller('threads')
@@ -58,7 +61,7 @@ export class ThreadsController {
   @UseGuards(RolesGuard)
   async findAll(
     @Query() paginationDto: ThreadsPaginationDto,
-  ): Promise<ResponseDto<ThreadEntity[]>> {
+  ): Promise<PageResponseDto<ThreadResponseDto>> {
     // const cacheKey = `threads_page_${paginationDto.page}_limit_${paginationDto.limit}`;
     // const cachedThreads = await this.redisClient.get(cacheKey);
 
@@ -69,15 +72,25 @@ export class ThreadsController {
     const threadsWithPagination =
       await this.threadsService.getAllThreads(paginationDto);
 
-    // Lưu kết quả vào Redis với TTL là 60 giây
-    // await this.redisClient.set(
-    //   cacheKey,
-    //   JSON.stringify(threadsWithPagination),
-    //   'EX',
-    //   60,
-    // );
+    const threadResponseDtos = threadsWithPagination.data.map(
+      (thread) =>
+        new ThreadResponseDto(
+          thread.id,
+          thread.content,
+          thread.visibility,
+          thread.media,
+          thread.createdAt,
+          thread.user,
+          thread.updatedAt,
+        ),
+    );
 
-    return threadsWithPagination;
+    // Tạo PageResponseDto
+    return new PageResponseDto<ThreadResponseDto>(
+      threadResponseDtos,
+      threadsWithPagination.pagination,
+      'Threads retrieved successfully',
+    );
   }
 
   // API để lấy threads của người dùng thực hiện request
@@ -91,7 +104,7 @@ export class ThreadsController {
   async findUserThreads(
     @Request() req: any, // Lấy thông tin người dùng từ request
     @Query() paginationDto: PaginationDto, // Lấy thông tin phân trang từ query params
-  ): Promise<ResponseDto<ThreadEntity[]>> {
+  ): Promise<PageResponseDto<ThreadResponseDto>> {
     const userId = req.user.id; // Lấy userId từ thông tin người dùng đã xác thực
 
     // Cập nhật bộ lọc để chỉ lấy các thread của người dùng hiện tại
@@ -100,9 +113,28 @@ export class ThreadsController {
       user: { id: userId }, // Thay đổi ở đây để sử dụng object với thuộc tính user
     };
 
-    // Gọi service để lấy tất cả threads, bao gồm cả các filter
-    const threads = await this.threadsService.getAllThreads(paginationDto);
-    return threads;
+    const threadsWithPagination =
+      await this.threadsService.getAllThreads(paginationDto);
+
+    const threadResponseDtos = threadsWithPagination.data.map(
+      (thread) =>
+        new ThreadResponseDto(
+          thread.id,
+          thread.content,
+          thread.visibility,
+          thread.media,
+          thread.createdAt,
+          thread.user,
+          thread.updatedAt,
+        ),
+    );
+
+    // Tạo PageResponseDto
+    return new PageResponseDto<ThreadResponseDto>(
+      threadResponseDtos,
+      threadsWithPagination.pagination,
+      'Threads retrieved successfully',
+    );
   }
 
   @Post()
@@ -118,7 +150,7 @@ export class ThreadsController {
     @Body() createThreadDto: CreateThreadDto, // Use DTO here
     @Request() req: any, // Thêm request để lấy thông tin người dùng
     @UploadedFiles() files: Express.Multer.File[],
-  ): Promise<ThreadEntity> {
+  ): Promise<ResponseDto<ThreadResponseDto>> {
     const userId = req.user.id;
     // Fetch the user entity by ID
     const user = await this.usersService.getUserById(userId); // Adjust according to your service
@@ -129,7 +161,7 @@ export class ThreadsController {
 
     const threadData: Partial<ThreadEntity> = {
       content: createThreadDto.content,
-      user: user, // Assign the actual user entity
+      user: user.data,
     };
 
     const thread = await this.threadsService.create(threadData);
@@ -148,7 +180,7 @@ export class ThreadsController {
 
         // Lưu thông tin file vào cơ sở dữ liệu
         await this.threadsService.addMediaToThread(
-          thread.id,
+          thread.data.id,
           fileUrl,
           type,
           fileName,
@@ -156,7 +188,17 @@ export class ThreadsController {
       }
     }
 
-    return thread;
+    // Tạo ThreadResponseDto từ thread đã tạo
+    const threadResponse = new ThreadResponseDto(
+      thread.data.id,
+      thread.data.content,
+      thread.data.visibility,
+      thread.data.media,
+      thread.data.createdAt,
+      thread.data.user,
+      thread.data.updatedAt,
+    );
+    return new ResponseDto(threadResponse, 'Thread created successfully', 201);
   }
 
   @Put(':id')
@@ -170,7 +212,7 @@ export class ThreadsController {
   async update(
     @Param('id') id: number,
     @Body() updateThreadDto: UpdateThreadDto, // Sử dụng DTO ở đây
-  ): Promise<ThreadEntity> {
+  ): Promise<ResponseDto<ThreadResponseDto>> {
     // Chuyển đổi từ DTO sang Partial<ThreadEntity> trước khi gọi service
     const threadData: Partial<ThreadEntity> = {
       content: updateThreadDto.content,

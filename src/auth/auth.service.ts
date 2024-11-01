@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SessionEntity } from '../sessions/session.entity';
 import { Repository } from 'typeorm';
 import { UserEntity } from 'src/users/user.entity';
-
+import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class AuthService {
   constructor(
@@ -21,7 +21,11 @@ export class AuthService {
 
   async register(username: string, password: string) {
     const hashedPassword = await bcrypt.hash(password, 10);
-    return this.usersService.createUser({ username, password: hashedPassword });
+    return this.usersService.createUser({
+      username,
+      password: hashedPassword,
+      displayId: uuidv4(),
+    });
   }
 
   async validateUser(username: string, password: string): Promise<any> {

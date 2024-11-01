@@ -29,6 +29,9 @@ export class UserEntity {
   @Column({ nullable: true })
   email: string;
 
+  @Column({ unique: true })
+  displayId: string;
+
   @OneToMany(() => ThreadEntity, (thread) => thread.user)
   threads: ThreadEntity[];
 
