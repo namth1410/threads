@@ -4,12 +4,6 @@
 STACK_NAME="my_stack"          # Tên của stack
 SERVICE_NAME="app"             # Tên của service trong stack
 
-# Kiểm tra nếu script được chạy với quyền root
-if [ "$(id -u)" -ne 0 ]; then
-    echo "Vui lòng chạy script với quyền root!"
-    exit 1
-fi
-
 # Cập nhật lại service và force restart
 echo "Updating and restarting service '$SERVICE_NAME' in stack '$STACK_NAME'..."
 docker service update --force $STACK_NAME"_"$SERVICE_NAME

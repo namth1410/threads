@@ -37,6 +37,19 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+### Minio
+
+```
+docker run \
+   -p 9004:9000 \
+   -p 9005:9005 \
+   --name minio \
+   -v ~/data_minio:/data \
+   -e "MINIO_ROOT_USER=namth" \
+   -e "MINIO_ROOT_PASSWORD=01664157092aA" \
+   quay.io/minio/minio server /data --console-address ":9005"
+```
+
 ## Features
 
 - Redis.
