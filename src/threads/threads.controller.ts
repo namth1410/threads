@@ -4,6 +4,9 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
+  Logger,
+  LoggerService,
   NotFoundException,
   Param,
   Post,
@@ -17,6 +20,8 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -37,12 +42,18 @@ import { ThreadsService } from './threads.service';
 import { Visibility } from './enums/visibility.enum';
 import { PageResponseDto } from 'src/common/dto/page-response.dto';
 import { ThreadResponseDto } from './dto/thread-response.dto';
+import {
+  WINSTON_MODULE_NEST_PROVIDER,
+  WINSTON_MODULE_PROVIDER,
+} from 'nest-winston';
 
 @ApiTags('threads')
 @Controller('threads')
 @UseGuards(JwtAuthGuard) // Áp dụng guard cho toàn bộ controller
 @ApiBearerAuth() // Áp dụng Bearer Auth cho toàn bộ controller
 export class ThreadsController {
+  @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService; // Inject logger Winston
+
   constructor(
     private readonly threadsService: ThreadsService,
     private readonly usersService: UsersService, // Inject UsersService
@@ -140,6 +151,24 @@ export class ThreadsController {
   @Post()
   @UseInterceptors(FilesInterceptor('files'))
   @ApiOperation({ summary: 'Create a new thread' })
+  @ApiConsumes('multipart/form-data') // Chỉ định kiểu dữ liệu là multipart/form-data
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        content: {
+          type: 'string',
+          description: 'Content of the thread',
+          example: 'This is a sample thread content',
+        },
+        files: {
+          type: 'string',
+          format: 'binary', // Định dạng file là binary
+          description: 'Uploaded file (optional)',
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 201,
     description: 'Thread created successfully.',
@@ -152,10 +181,13 @@ export class ThreadsController {
     @UploadedFiles() files: Express.Multer.File[],
   ): Promise<ResponseDto<ThreadResponseDto>> {
     const userId = req.user.id;
+    this.logger.log(`Creating thread for user ID: ${userId}`);
+
     // Fetch the user entity by ID
     const user = await this.usersService.getUserById(userId); // Adjust according to your service
 
     if (!user) {
+      this.logger.error(`User with ID ${userId} not found`);
       throw new NotFoundException('User not found'); // Handle user not found scenario
     }
 
@@ -163,20 +195,30 @@ export class ThreadsController {
       content: createThreadDto.content,
       user: user.data,
     };
+    this.logger.log(`Creating thread with content: ${createThreadDto.content}`);
+    console.log(`Creating thread with content: ${createThreadDto.content}`);
 
     const thread = await this.threadsService.create(threadData);
     // Xử lý tệp tải lên
     if (files && files.length > 0) {
       const bucketName = process.env.MINIO_BUCKET_NAME;
       for (const file of files) {
+        this.logger.log(`Uploading file ${file.originalname} to MinIO`);
+        console.log(`Uploading file ${file.originalname} to MinIO`);
         const fileName = await this.minioService.uploadFile(bucketName, file); // Thay thế bucketName bằng tên bucket thực tế
-
+        
         const fileUrl = await this.minioService.getFileUrl(
           bucketName,
           fileName,
         );
 
         const type = file.mimetype.startsWith('image') ? 'image' : 'video';
+        this.logger.log(
+          `File ${file.originalname} uploaded successfully. URL: ${fileUrl}`,
+        );
+        console.log(
+          `File ${file.originalname} uploaded successfully. URL: ${fileUrl}`,
+        );
 
         // Lưu thông tin file vào cơ sở dữ liệu
         await this.threadsService.addMediaToThread(
@@ -198,6 +240,8 @@ export class ThreadsController {
       thread.data.user,
       thread.data.updatedAt,
     );
+    this.logger.log(`Thread created successfully with ID: ${thread.data.id}`);
+    console.log(`Thread created successfully with ID: ${thread.data.id}`);
     return new ResponseDto(threadResponse, 'Thread created successfully', 201);
   }
 

@@ -18,8 +18,19 @@ export class MinioService {
   async uploadFile(bucketName: string, file: Express.Multer.File) {
     // Thay đổi kiểu cho 'file'
     const fileName = `${Date.now()}-${file.originalname}`;
-    await this.minioClient.putObject(bucketName, fileName, file.buffer);
-    return fileName;
+    try {
+      await this.minioClient.putObject(bucketName, fileName, file.buffer);
+      return fileName;
+    } catch (error) {
+      // Ghi log chi tiết lỗi
+      console.log(
+        `Failed to upload file to bucket "${bucketName}". File name: "${fileName}". Error: ${error.message}`,
+        error.stack,
+      );
+
+      // Throw lại lỗi để xử lý tiếp tục ở tầng khác nếu cần
+      throw new Error(`Upload failed for file "${fileName}": ${error.message}`);
+    }
   }
 
   async getFileUrl(bucketName: string, fileName: string) {

@@ -9,13 +9,16 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtStrategy } from './jwt.strategy';
 import { LocalStrategy } from './local.strategy';
 import { JwtLoggingMiddleware } from './jwt-logging.middleware';
+import { config } from 'dotenv';
+
+config();
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: 'secretKey',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1h' },
     }),
     SessionsModule,
@@ -26,6 +29,6 @@ import { JwtLoggingMiddleware } from './jwt-logging.middleware';
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(JwtLoggingMiddleware).forRoutes('auth/*'); // Áp dụng middleware cho các route auth
+    consumer.apply(JwtLoggingMiddleware).forRoutes('/*'); // Áp dụng middleware cho các route auth
   }
 }

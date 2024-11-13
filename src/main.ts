@@ -17,8 +17,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document); // URL để truy cập Swagger UI
 
-  app.useGlobalPipes(new ValidationPipe({transform: true}));
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
-  await app.listen(3000);
+  await app.listen(process.env.NODE_ENV === 'production' ? 3000 : 4000);
 }
 bootstrap();
