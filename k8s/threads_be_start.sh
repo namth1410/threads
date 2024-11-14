@@ -26,7 +26,7 @@ if [[ "$SERVICE_STATUS" == *"Running"* ]]; then
         exit 1
     fi
 
-    echo "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥"
+    echo "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥"
     echo "Chạy lệnh migrate..."
     docker exec -i $CONTAINER_ID bash -c "npx typeorm migration:generate -d ./dist/db/data-source.js"
     docker exec -i $CONTAINER_ID bash -c "npx typeorm migration:run -d ./dist/db/data-source.js"
