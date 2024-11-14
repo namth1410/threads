@@ -19,6 +19,10 @@ if [[ "$SERVICE_STATUS" == *"Running"* ]]; then
     echo "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥"
     echo "Service '$SERVICE_NAME' restarted successfully."
 
+    # Lấy danh sách container đã dừng và xóa chúng
+    echo "💀💀💀 Đang xóa các container đã dừng... 💀💀💀"
+    docker ps -a --filter "status=exited" --filter "name=$STACK_NAME"_"$SERVICE_NAME" -q | xargs -r docker rm
+
     # Chui vào container
     CONTAINER_ID=$(docker ps -q --filter "name=$STACK_NAME"_"$SERVICE_NAME")
     if [ -z "$CONTAINER_ID" ]; then

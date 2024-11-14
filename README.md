@@ -58,4 +58,4 @@ docker run \
 
 ## Đang làm
 
-- migrate lần đầu tạo dự án
+- log, kibana
