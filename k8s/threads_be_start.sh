@@ -28,16 +28,16 @@ if [[ "$SERVICE_STATUS" == *"Running"* ]]; then
 
     echo "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥"
     echo "Chạy lệnh migrate..."
-    docker exec -it $CONTAINER_ID bash -c "npx typeorm migration:generate -d ./dist/db/data-source.js"
-    docker exec -it $CONTAINER_ID bash -c "npx typeorm migration:run -d ./dist/db/data-source.js"
+    docker exec -i $CONTAINER_ID bash -c "npx typeorm migration:generate -d ./dist/db/data-source.js"
+    docker exec -i $CONTAINER_ID bash -c "npx typeorm migration:run -d ./dist/db/data-source.js"
 
     # Cài đặt ts-node global trong container
     echo "Cài đặt ts-node toàn cục trong container..."
-    docker exec -it $CONTAINER_ID bash -c "npm install -g ts-node"
+    docker exec -i $CONTAINER_ID bash -c "npm install -g ts-node"
 
     # Chạy lệnh ts-node để chạy seed
     # echo "Chạy lệnh ts-node để chạy seed..."
-    # docker exec -it $CONTAINER_ID bash -c "ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run -d ./dist/db/data-source.ts"
+    # docker exec -i $CONTAINER_ID bash -c "ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run -d ./dist/db/data-source.ts"
 
     echo "💓💓💓Done.💓💓💓"
 else
