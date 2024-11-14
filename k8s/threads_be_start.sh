@@ -22,7 +22,7 @@ if [[ "$SERVICE_STATUS" == *"Running"* ]]; then
     # Chui vào container
     CONTAINER_ID=$(docker ps -q --filter "name=$STACK_NAME"_"$SERVICE_NAME")
     if [ -z "$CONTAINER_ID" ]; then
-        echo "💀💀💀Không tìm thấy container cho service '$SERVICE_NAME'."
+        echo "💀💀💀Không tìm thấy container cho service '$SERVICE_NAME'.💀💀💀"
         exit 1
     fi
 
