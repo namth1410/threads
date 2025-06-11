@@ -5,16 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PaginationMetaDto } from 'src/common/dto/pagination-meta.dto';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PageResponseDto } from 'src/common/dto/page-response.dto';
+import { ResponseDto } from 'src/common/dto/response.dto';
 import { MediaEntity } from 'src/minio/media.entity';
 import { MinioService } from 'src/minio/minio.service';
-import { DataSource, Like, Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, Like, Repository } from 'typeorm';
+import { ThreadsPaginationDto } from './dto/threads-pagination.dto';
 import { ThreadEntity } from './thread.entity'; // Giả sử bạn đã có một entity cho Thread
 import { ThreadsRepository } from './threads.repository';
-import { ResponseDto } from 'src/common/dto/response.dto';
-import { ThreadsPaginationDto } from './dto/threads-pagination.dto';
-import { PageResponseDto } from 'src/common/dto/page-response.dto';
 
 @Injectable()
 export class ThreadsService {

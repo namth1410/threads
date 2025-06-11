@@ -1,10 +1,9 @@
 // src/db/seeds/user.seeder.ts
-import { Seeder, SeederFactoryManager } from 'typeorm-extension';
-import { DataSource } from 'typeorm';
-import { UserEntity } from 'src/users/user.entity';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/common/enums/role.enum';
-import { v4 as uuidv4 } from 'uuid';
+import { UserEntity } from 'src/users/user.entity';
+import { DataSource } from 'typeorm';
+import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
 export default class UserSeeder implements Seeder {
   public async run(
@@ -25,6 +24,13 @@ export default class UserSeeder implements Seeder {
         email: 'superadmin@example.com', // Thêm email nếu có
         displayId: 'superadmin',
         role: Role.SUPERADMIN, // Thêm vai trò nếu cần
+      },
+      {
+        username: 'admin',
+        password: await bcrypt.hash('password', 10),
+        email: 'admin@example.com', // Thêm email nếu có
+        displayId: 'admin',
+        role: Role.ADMIN, // Thêm vai trò nếu cần
       },
       {
         username: 'testuser',

@@ -1,28 +1,28 @@
 // auth.controller.ts
 import {
+  Body,
   Controller,
   Post,
-  Body,
   Request,
-  UseGuards,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
 import {
-  ApiTags,
+  ApiBearerAuth,
+  ApiOkResponse,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { UsersService } from '../users/users.service';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ResponseDto } from 'src/common/dto/response.dto';
 import { UserEntity } from 'src/users/user.entity';
 import { Repository } from 'typeorm';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
+import { AuthService } from './auth.service';
+import { LoginDto, LoginResponseDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { ResponseDto } from 'src/common/dto/response.dto';
+import { RegisterDto } from './dto/register.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -48,17 +48,22 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Log in a user' })
-  @ApiResponse({ status: 200, description: 'User logged in successfully.' })
+  @ApiOkResponse({
+    description: 'User logged in successfully.',
+    type: LoginResponseDto, // Định nghĩa kiểu trả về
+  })
   @ApiResponse({ status: 401, description: 'Invalid credentials.' })
   async login(@Body() loginDto: LoginDto) {
     const user = await this.authService.validateUser(
       loginDto.username,
       loginDto.password,
     );
-    if (user) {
-      return this.authService.login(user);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
     }
-    throw new UnauthorizedException('Invalid credentials');
+
+    return this.authService.login(user);
   }
 
   @Post('refresh')

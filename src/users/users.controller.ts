@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Param,
   Patch,
   Query,
   Request,
@@ -14,16 +13,16 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { UsersService } from './users.service';
-import { ResponseDto } from 'src/common/dto/response.dto';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { UserEntity } from './user.entity';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { PageResponseDto } from 'src/common/dto/page-response.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { ResponseDto } from 'src/common/dto/response.dto';
 import { Role } from 'src/common/enums/role.enum';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PageResponseDto } from 'src/common/dto/page-response.dto';
+import { UserEntity } from './user.entity';
+import { UsersService } from './users.service';
 
 @ApiTags('Users')
 @Controller('users')

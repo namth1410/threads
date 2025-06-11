@@ -5,7 +5,6 @@ import {
   Delete,
   Get,
   Inject,
-  Logger,
   LoggerService,
   NotFoundException,
   Param,
@@ -26,7 +25,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { PageResponseDto } from 'src/common/dto/page-response.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
 import { Role } from 'src/common/enums/role.enum';
@@ -35,17 +36,11 @@ import { MinioService } from 'src/minio/minio.service';
 import { UsersService } from 'src/users/users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Import guard
 import { CreateThreadDto } from './dto/create-thread.dto';
+import { ThreadResponseDto } from './dto/thread-response.dto';
 import { ThreadsPaginationDto } from './dto/threads-pagination.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
 import { ThreadEntity } from './thread.entity'; // Entity cho bài đăng
 import { ThreadsService } from './threads.service';
-import { Visibility } from './enums/visibility.enum';
-import { PageResponseDto } from 'src/common/dto/page-response.dto';
-import { ThreadResponseDto } from './dto/thread-response.dto';
-import {
-  WINSTON_MODULE_NEST_PROVIDER,
-  WINSTON_MODULE_PROVIDER,
-} from 'nest-winston';
 
 @ApiTags('threads')
 @Controller('threads')
@@ -206,7 +201,7 @@ export class ThreadsController {
         this.logger.log(`Uploading file ${file.originalname} to MinIO`);
         console.log(`Uploading file ${file.originalname} to MinIO`);
         const fileName = await this.minioService.uploadFile(bucketName, file); // Thay thế bucketName bằng tên bucket thực tế
-        
+
         const fileUrl = await this.minioService.getFileUrl(
           bucketName,
           fileName,

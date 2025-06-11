@@ -1,11 +1,9 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserEntity } from './user.entity';
-import { UsersRepository } from './users.repository';
+import { PageResponseDto } from 'src/common/dto/page-response.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
-import { PageResponseDto } from 'src/common/dto/page-response.dto';
+import { UserEntity } from './user.entity';
+import { UsersRepository } from './users.repository';
 
 @Injectable()
 export class UsersService {
@@ -31,6 +29,24 @@ export class UsersService {
 
   async findByUsername(username: string): Promise<UserEntity | null> {
     return this.usersRepository.findByUsername(username);
+  }
+
+  async getHashPasswordByUsername(
+    username: string,
+  ): Promise<UserEntity | null> {
+    return this.usersRepository.findOneByOptions({
+      where: { username },
+      select: [
+        'id',
+        'username',
+        'password',
+        'email',
+        'displayId',
+        'role',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
   }
 
   async createUser(
@@ -65,5 +81,13 @@ export class UsersService {
 
   async deleteUser(id: number): Promise<void> {
     await this.usersRepository.deleteEntity(id); // Sử dụng phương thức từ UsersRepository
+  }
+
+  async getAllUserIds(): Promise<number[]> {
+    const users = await this.usersRepository.find({
+      select: ['id'], // Chỉ lấy cột `id`
+    });
+
+    return users.map((user) => user.id); // Trả về danh sách id
   }
 }

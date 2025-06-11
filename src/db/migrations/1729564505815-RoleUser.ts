@@ -8,7 +8,7 @@ export class RoleUser1729564505815 implements MigrationInterface {
     await queryRunner.query(`
             DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'users_role_enum') THEN
-                CREATE TYPE "public"."users_role_enum" AS ENUM('user', 'superadmin');
+                CREATE TYPE "public"."users_role_enum" AS ENUM('user', 'superadmin', 'admin');
             END IF;
             END $$;
         `);

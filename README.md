@@ -57,5 +57,5 @@ docker run \
 - Minio (S3).
 
 ## Đang làm
-
+- scp lại file docker compose rồi run lại elastic, kibana
 - log, kibana

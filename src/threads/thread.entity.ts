@@ -1,15 +1,14 @@
+import { MediaEntity } from 'src/minio/media.entity';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
+  Entity,
   ManyToOne,
   OneToMany,
-  JoinColumn,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
-import { UserEntity } from '../users/user.entity';
 import { CommentEntity } from '../comments/comment.entity';
 import { LikeEntity } from '../likes/like.entity';
-import { MediaEntity } from 'src/minio/media.entity';
+import { UserEntity } from '../users/user.entity';
 import { Visibility } from './enums/visibility.enum';
 
 @Entity('threads')

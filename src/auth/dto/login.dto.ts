@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, Length } from 'class-validator';
+import { UserResponseDto } from './user-response.dto';
 
 export class LoginDto {
   @ApiProperty({ example: 'testuser', description: 'Username of the user' })
@@ -12,4 +13,20 @@ export class LoginDto {
   @IsNotEmpty()
   @Length(6, 20)
   password: string;
+}
+export class LoginResponseDto {
+  @ApiProperty({
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: 'Access token to be used for authentication',
+  })
+  access_token: string;
+
+  @ApiProperty({
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: 'Refresh token to be used for obtaining a new access token',
+  })
+  refresh_token: string;
+
+  @ApiProperty({ type: () => UserResponseDto })
+  user: UserResponseDto;
 }

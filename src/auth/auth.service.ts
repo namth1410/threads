@@ -8,6 +8,7 @@ import { SessionEntity } from '../sessions/session.entity';
 import { Repository } from 'typeorm';
 import { UserEntity } from 'src/users/user.entity';
 import { v4 as uuidv4 } from 'uuid';
+import { UserResponseDto } from './dto/user-response.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -29,9 +30,10 @@ export class AuthService {
   }
 
   async validateUser(username: string, password: string): Promise<any> {
-    const user = await this.usersService.findByUsername(username);
+    const user = await this.usersService.getHashPasswordByUsername(username);
+
     if (user && (await bcrypt.compare(password, user.password))) {
-      const { password, ...result } = user; // Loại bỏ mật khẩu khỏi kết quả
+      const { password, ...result } = user;
       return result;
     }
     return null;
@@ -72,7 +74,11 @@ export class AuthService {
 
     await this.sessionRepository.save(session);
 
-    return { access_token: accessToken, refresh_token: refreshToken };
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: new UserResponseDto(user),
+    };
   }
 
   async logout(userId: number) {

@@ -1,15 +1,13 @@
 import {
   DeepPartial,
   FindManyOptions,
+  FindOneOptions,
   FindOptionsWhere,
   Repository,
-  SelectQueryBuilder,
 } from 'typeorm';
-import { PaginationDto } from '../dto/pagination.dto';
-import { paginate } from '../helpers/pagination.helper';
-import { ResponseDto } from '../dto/response.dto';
-import { PaginationMetaDto } from '../dto/pagination-meta.dto';
 import { PageResponseDto } from '../dto/page-response.dto';
+import { PaginationMetaDto } from '../dto/pagination-meta.dto';
+import { ResponseDto } from '../dto/response.dto';
 
 interface BaseEntity {
   id: number;
@@ -62,6 +60,11 @@ export abstract class BaseRepository<T extends BaseEntity> {
     return this.repository.findOne({ where: criteria });
   }
 
+  // Thêm phiên bản linh hoạt hơn
+  async findOneByOptions(options: FindOneOptions<T>): Promise<T | null> {
+    return this.repository.findOne(options);
+  }
+
   // Thêm phương thức tìm theo username
   async findByUsername(username: string): Promise<T | null> {
     const where: FindOptionsWhere<T> = {
@@ -102,5 +105,9 @@ export abstract class BaseRepository<T extends BaseEntity> {
 
   async deleteEntity(id: number): Promise<void> {
     await this.repository.delete(id);
+  }
+
+  async find(options?: FindManyOptions<T>): Promise<T[]> {
+    return this.repository.find(options);
   }
 }
