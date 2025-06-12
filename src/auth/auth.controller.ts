@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiExtraModels,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
@@ -46,14 +47,17 @@ export class AuthController {
     );
   }
 
+  @ApiExtraModels(ResponseDto, LoginResponseDto) // 👈 Đăng ký model
   @Post('login')
   @ApiOperation({ summary: 'Log in a user' })
   @ApiOkResponse({
     description: 'User logged in successfully.',
-    type: LoginResponseDto, // Định nghĩa kiểu trả về
+    type: ResponseDto<LoginResponseDto>, // Định nghĩa kiểu trả về
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials.' })
-  async login(@Body() loginDto: LoginDto) {
+  async login(
+    @Body() loginDto: LoginDto,
+  ): Promise<ResponseDto<LoginResponseDto>> {
     const user = await this.authService.validateUser(
       loginDto.username,
       loginDto.password,

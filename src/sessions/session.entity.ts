@@ -17,8 +17,4 @@ export class SessionEntity {
 
   @Column()
   expiresAt: Date;
-
-  // Thêm thông tin về thiết bị nếu cần
-  // @Column()
-  // deviceInfo: string;
 }

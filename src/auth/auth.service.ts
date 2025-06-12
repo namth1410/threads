@@ -1,14 +1,14 @@
 // auth.service.ts
 import { Injectable } from '@nestjs/common';
-import { UsersService } from '../users/users.service'; // Service quản lý người dùng
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SessionEntity } from '../sessions/session.entity';
-import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { ResponseDto } from 'src/common/dto/response.dto';
 import { UserEntity } from 'src/users/user.entity';
-import { v4 as uuidv4 } from 'uuid';
-import { UserResponseDto } from './dto/user-response.dto';
+import { Repository } from 'typeorm';
+import { SessionEntity } from '../sessions/session.entity';
+import { UsersService } from '../users/users.service'; // Service quản lý người dùng
+import { LoginResponseDto } from './dto/login.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -25,7 +25,7 @@ export class AuthService {
     return this.usersService.createUser({
       username,
       password: hashedPassword,
-      displayId: uuidv4(),
+      displayId: username,
     });
   }
 
@@ -58,27 +58,29 @@ export class AuthService {
     }
   }
 
-  async login(user: any) {
+  async login(user: UserEntity): Promise<ResponseDto<LoginResponseDto>> {
     const { accessToken, refreshToken } = this.generateToken(user);
 
-    // Hủy phiên làm việc cũ nếu có
+    // Xoá session cũ nếu có
     await this.sessionRepository.delete({ userId: user.id });
 
-    // Tạo phiên làm việc mới
+    // Tạo session mới
     const session = this.sessionRepository.create({
       userId: user.id,
       token: accessToken,
       refreshToken: refreshToken,
-      expiresAt: new Date(Date.now() + 3600 * 1000), // Ví dụ: phiên làm việc sẽ hết hạn sau 1 giờ
+      expiresAt: new Date(Date.now() + 3600 * 1000), // 1 giờ
     });
 
     await this.sessionRepository.save(session);
 
-    return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      user: new UserResponseDto(user),
-    };
+    return new ResponseDto(
+      {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      },
+      'Login successful',
+    );
   }
 
   async logout(userId: number) {

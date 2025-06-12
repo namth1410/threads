@@ -1,10 +1,12 @@
 import { MediaEntity } from 'src/minio/media.entity';
 import {
   Column,
+  DeleteDateColumn,
   Entity,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { CommentEntity } from '../comments/comment.entity';
 import { LikeEntity } from '../likes/like.entity';
@@ -44,6 +46,9 @@ export class ThreadEntity {
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column({ nullable: true })
+  @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

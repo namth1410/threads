@@ -20,19 +20,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any): Promise<UserEntity | null> {
     // Tìm người dùng dựa trên ID (payload.sub chứa userId)
-    const user = await this.userRepository.findOne({
+    return this.userRepository.findOne({
       where: { id: payload.sub },
     });
-    console.log(user);
-    console.log(payload);
-    
-    if (!user || user.tokenVersion !== payload.tokenVersion) {
-      // Nếu không tìm thấy user hoặc tokenVersion không khớp, từ chối truy cập
-      console.log("null----------------");
-      
-      return null;
-    }
-
-    return user; // Trả về user nếu tìm thấy
   }
 }
